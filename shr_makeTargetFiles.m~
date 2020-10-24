@@ -208,9 +208,9 @@ for i = 1:length(allmat)
         for col=1:mat_size(2)
             thisData = mat(row, col);
             if thisData == 999
-                thisData = '"255255255"';
+                thisData = ''255255255'';
             elseif thisData == 9999
-                thisData = '"000255000"';
+                thisData = ''000255000'';
             else
                 thisData = num2str(thisData);
             end
