@@ -67,7 +67,7 @@ function [varargout] = shr_target(s, b, varargin)
 %% define target folder
 %tgtDir = '/Users/jonathanamichaels/Dropbox/KINARM/Continuous_Reach/tgt'; %save tgt files in the right folder
 %if ~exist(tgtDir,'dir'); mkdir(tgtDir); end %create target folder if it doesn't already exist
-dtpDir = '/Users/jonathanamichaels/Dropbox/KINARM/Continuous_Reach/dtp'; %save tgt files in the right folder
+dtpDir = 'C:\Users\User\Documents\Dexterit-E 3.8 Tasks\Continuous_Reach\'; %save tgt files in the right folder
 if ~exist(dtpDir,'dir'); mkdir(dtpDir); end %create target folder if it doesn't already exist
 
 %% default experimental details and varargin options
@@ -80,17 +80,17 @@ n_trials = 2000; % how many trials in a block?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------------------------------------------------------------------
 seq_length = 1; % how much lookahead?
-x_range = [-3.5 3.5]; % what's the range of x coords?
-y_range = [-3 3]; % what's the range of y coords?
+x_range = [-4.5 4.5]; % what's the range of x coords?
+y_range = [-4 4]; % what's the range of y coords?
 reward_range = [150 300];
-min_d = 2; % what's the minumum distance allowed between successive targets?
-max_d = 7;
+min_d = 3; % what's the minumum distance allowed between successive targets?
+max_d = 8;
 %%% These have to be tied to the logical radius of the targets and the minimum distance in order to avoid perturbations being assigned inside a target
-min_pdist = 0.26;
-max_pdist = 0.74;
+min_pdist = 0.27;
+max_pdist = 0.73;
 %%%
-load_mag = 0.1;
-pert_prob = 0.3;
+load_mag = 0.3;
+pert_prob = 0;
 reward_prob = 1;
 show_seq = 0; % do you want to plot the sequence for each trial in this block? yes (1), or no (0)
 vararginoptions(varargin, {'n_trials', 'seq_length', 'x_range', 'y_range', ...
@@ -111,22 +111,32 @@ for t = 1 : n_trials
     y = unifrnd(min(y_range), max(y_range));
     
     if t > 1
-        last_target = [x_pos, y_pos];
+        last_target = target_mat(t-1,1:2);
         d = sqrt(sum((last_target - [x y]).^2));
         while d < min_d || d > max_d
             x = unifrnd(min(x_range), max(x_range));
             y = unifrnd(min(y_range), max(y_range));
             d = sqrt(sum((last_target - [x y]).^2));
         end
+        if t > 2
+            last_target2 = target_mat(t-2,1:2);
+            d2 = sqrt(sum((last_target2 - [x y]).^2));
+            while d < min_d || d > max_d || d2 < min_d || d2 > max_d
+                x = unifrnd(min(x_range), max(x_range));
+                y = unifrnd(min(y_range), max(y_range));
+                d = sqrt(sum((last_target - [x y]).^2));
+                d2 = sqrt(sum((last_target2 - [x y]).^2));
+            end
+        end
     end
     
     %% TARGET TABLE
     x_pos = x;
     y_pos = y;
-    visual_rad = 0.5;
-    logical_rad = 0.5;
-    color = 999;
-    reached_color = 9999;
+    visual_rad = 0.8;
+    logical_rad = 0.8;
+    color = 9999;
+    reached_color = 99999;
     
     this_target = [x_pos, y_pos, visual_rad, logical_rad, color, reached_color];
     target_mat = [target_mat; this_target];
@@ -143,10 +153,11 @@ for t = 1 : n_trials
         target_3 = 2;
     end
     if rand < pert_prob && t > 1
-        perturb_dist = unifrnd(min_pdist, max_pdist);
+        perturb_dist = unifrnd(min_pdist, max_pdist) * d;
     else
         perturb_dist = -1;
     end
+    perturb_dist = perturb_dist * 0.01; % convert to meters
     dwell_time = 200;
     if rand < reward_prob
         reward = round(unifrnd(reward_range(1), reward_range(2)));
@@ -207,9 +218,9 @@ for i = 1:length(allmat)
         tp_table = [tp_table '['];
         for col=1:mat_size(2)
             thisData = mat(row, col);
-            if thisData == 999
+            if thisData == 9999
                 thisData = '"255255255"';
-            elseif thisData == 9999
+            elseif thisData == 99999
                 thisData = '"000255000"';
             else
                 thisData = num2str(thisData);
