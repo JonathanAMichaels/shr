@@ -80,17 +80,14 @@ n_trials = 2000; % how many trials in a block?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------------------------------------------------------------------
 seq_length = 1; % how much lookahead?
-x_range = [-4.5 4.5]; % what's the range of x coords?
-y_range = [-4 4]; % what's the range of y coords?
+x_range = [-5 5]; % what's the range of x coords?
+y_range = [-5 5]; % what's the range of y coords?
 reward_range = [150 300];
 min_d = 3; % what's the minumum distance allowed between successive targets?
 max_d = 8;
-%%% These have to be tied to the logical radius of the targets and the minimum distance in order to avoid perturbations being assigned inside a target
-min_pdist = 0.27;
-max_pdist = 0.73;
 %%%
-load_mag = 0.3;
-pert_prob = 0;
+load_mag = 0.5;
+pert_prob = 0.25;
 reward_prob = 1;
 show_seq = 0; % do you want to plot the sequence for each trial in this block? yes (1), or no (0)
 vararginoptions(varargin, {'n_trials', 'seq_length', 'x_range', 'y_range', ...
@@ -128,6 +125,19 @@ for t = 1 : n_trials
                 d2 = sqrt(sum((last_target2 - [x y]).^2));
             end
         end
+        if t > 3
+            last_target2 = target_mat(t-2,1:2);
+            last_target3 = target_mat(t-3,1:2);
+            d2 = sqrt(sum((last_target2 - [x y]).^2));
+            d3 = sqrt(sum((last_target3 - [x y]).^2));
+            while d < min_d || d > max_d || d2 < min_d || d2 > max_d || d3 < min_d || d3 > max_d
+                x = unifrnd(min(x_range), max(x_range));
+                y = unifrnd(min(y_range), max(y_range));
+                d = sqrt(sum((last_target - [x y]).^2));
+                d2 = sqrt(sum((last_target2 - [x y]).^2));
+                d3 = sqrt(sum((last_target3 - [x y]).^2));
+            end
+        end
     end
     
     %% TARGET TABLE
@@ -153,7 +163,7 @@ for t = 1 : n_trials
         target_3 = 2;
     end
     if rand < pert_prob && t > 1
-        perturb_dist = unifrnd(min_pdist, max_pdist) * d;
+        perturb_dist = unifrnd(visual_rad + 1e-4, d - visual_rad);
     else
         perturb_dist = -1;
     end
@@ -178,7 +188,7 @@ for t = 1 : n_trials
     y_load = sin(dir) * load_mag;
     x_load = cos(dir) * load_mag;
     ramp_dur = 0;
-    load_dur = 100;
+    load_dur = 150;
     this_load = [x_load, y_load, ramp_dur, load_dur];
     load_mat = [load_mat; this_load];
 
